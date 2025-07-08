@@ -29,3 +29,15 @@ mongoose.connect(process.env.MONGO_URI, {
   console.log("MongoDB connected");
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 }).catch(err => console.log(err));
+
+
+const path = require("path");
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
+// Serve static files from client/dist
+app.use(express.static(path.join(__dirname, "../client/dist")));
+
+app.get("*", (req, res) => {
+  res.sendFile(path.resolve(__dirname, "../client/dist/index.html"));
+});
+

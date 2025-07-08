@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: jobfit-ai-backend
+    env: node
+    plan: free
+    buildCommand: |
+      cd client && npm install && npm run build
+      cd ../server && npm install
+    startCommand: node app.js
+    envVars:
+      - key: GEMINI_API_KEY
+        value: AIzaSyCDJN2xMoFIHBMiaMUmMENc4hTCxTLYJY0
+    rootDir: server
+    autoDeploy: true
