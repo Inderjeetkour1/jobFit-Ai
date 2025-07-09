@@ -7,6 +7,7 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 function Home() {
   const [resumeText, setResumeText] = useState("");
+  const [file, setFile] = useState(null);
   const [analysis, setAnalysis] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [coverLetter, setCoverLetter] = useState("");
@@ -16,24 +17,43 @@ function Home() {
   const [companyName, setCompanyName] = useState("ABC Corp");
 
   const handleAnalyze = async () => {
-    if (!resumeText.trim()) return alert("Please paste your resume first.");
+    if (!resumeText.trim() && !file) {
+      return alert("Please upload a resume file or paste your resume text.");
+    }
+
     setLoading(true);
     setAnalysis(null);
     setJobs([]);
     setCoverLetter("");
 
     try {
-      const res = await fetch(`${BASE_URL}/resume/upload`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resumeText }),
-      });
+      let res;
+
+      if (file) {
+        const formData = new FormData();
+        formData.append("resume", file);
+
+        res = await fetch(`${BASE_URL}/resume/uploadFile`, {
+          method: "POST",
+          body: formData,
+        });
+      } else {
+        res = await fetch(`${BASE_URL}/resume/upload`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ resumeText }),
+        });
+      }
 
       const data = await res.json();
       setAnalysis(data.analysis);
       setJobs(data.jobs || []);
+
+      if (data.analysis?.fromFallback) {
+        alert("⚠️ Showing fallback results due to AI quota limits.");
+      }
     } catch (error) {
-      console.error("Error:", error.message);
+      console.error("Analyze Error:", error);
       alert("Failed to get AI analysis. Try again.");
     } finally {
       setLoading(false);
@@ -41,48 +61,42 @@ function Home() {
   };
 
   const handleGenerateCoverLetter = async () => {
-    if (!resumeText.trim()) return alert("Please paste your resume first.");
+    if (!resumeText.trim() && !file) {
+      return alert("Please upload a resume file or paste your resume text.");
+    }
+
     setGeneratingCover(true);
     setCoverLetter("");
 
     try {
+      let resumeTextToUse = resumeText;
+
+      if (file) {
+        const formData = new FormData();
+        formData.append("resume", file);
+
+        const res = await fetch(`${BASE_URL}/resume/uploadFile`, {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await res.json();
+        resumeTextToUse = data.analysis?.rawText || "";
+      }
+
       const res = await fetch(`${BASE_URL}/resume/cover-letter`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resumeText, jobTitle, companyName }),
+        body: JSON.stringify({ resumeText: resumeTextToUse, jobTitle, companyName }),
       });
 
       const data = await res.json();
       setCoverLetter(data.coverLetter || "Failed to generate cover letter.");
     } catch (err) {
-      console.error("Error:", err);
+      console.error("Cover Letter Error:", err);
       setCoverLetter("Something went wrong.");
     } finally {
       setGeneratingCover(false);
-    }
-  };
-
-  const handlePDFUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append("resume", file);
-
-    setLoading(true);
-    try {
-      const res = await fetch(`${BASE_URL}/resume/uploadFile`, {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      setAnalysis(data.analysis);
-      setJobs(data.jobs || []);
-    } catch (error) {
-      console.error("PDF Upload Error:", error);
-      alert("Failed to upload PDF.");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -93,15 +107,13 @@ function Home() {
         <h1 className="text-3xl font-bold mb-4">AI Resume Analyzer</h1>
 
         <section id="upload">
-          <div className="mb-4">
-            <label className="block mb-1 font-medium">Upload Resume (PDF)</label>
-            <input
-              type="file"
-              accept=".pdf"
-              onChange={handlePDFUpload}
-              className="border p-2 rounded bg-white text-black"
-            />
-          </div>
+          <label className="block mb-2 font-medium">Upload Resume (PDF)</label>
+          <input
+            type="file"
+            accept=".pdf"
+            className="block w-full text-sm text-gray-700 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+            onChange={(e) => setFile(e.target.files[0])}
+          />
 
           <h3 className="mt-6 mb-2 font-semibold text-lg">OR Paste Resume Text:</h3>
           <textarea
@@ -161,7 +173,7 @@ function Home() {
         {!loading && analysis && <AnalysisResult analysis={analysis} />}
 
         {jobs.length > 0 && (
-          <section id="jobs" className="mt-8">
+          <section className="mt-8">
             <h2 className="text-2xl font-bold mb-4">Top Job Suggestions</h2>
             <div className="space-y-4">
               {jobs.map((job, index) => (

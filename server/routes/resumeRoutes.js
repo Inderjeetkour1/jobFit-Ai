@@ -3,10 +3,12 @@ const path = require("path");
 const multer = require("multer");
 const pdfParse = require("pdf-parse");
 const express = require("express");
+
 const {
   analyzeResume,
   generateCoverLetter
 } = require("../services/geminiService");
+
 const { fetchJobsByRole } = require("../services/jobSearchService");
 
 const router = express.Router();
@@ -36,7 +38,11 @@ router.post("/uploadFile", upload.single("resume"), async (req, res) => {
       jobs = await fetchJobsByRole(role);
     }
 
-    res.status(200).json({ analysis, jobs });
+    res.status(200).json({
+      analysis,
+      jobs,
+      fromFallback: analysis.fromFallback || false // ✅ frontend needs this
+    });
   } catch (err) {
     console.error("Error analyzing PDF:", err.message);
     res.status(500).json({ message: "Failed to analyze PDF" });
@@ -57,7 +63,11 @@ router.post("/upload", async (req, res) => {
       jobs = await fetchJobsByRole(role);
     }
 
-    res.status(200).json({ analysis, jobs });
+    res.status(200).json({
+      analysis,
+      jobs,
+      fromFallback: analysis.fromFallback || false // ✅ included here too
+    });
   } catch (err) {
     console.error("Text analysis failed:", err.message);
     res.status(500).json({ message: "Failed to analyze resume text" });
@@ -75,8 +85,12 @@ router.post("/cover-letter", async (req, res) => {
   }
 
   try {
-    const coverLetter = await generateCoverLetter(resumeText, jobTitle, companyName);
-    res.status(200).json({ coverLetter });
+    const result = await generateCoverLetter(resumeText, jobTitle, companyName);
+
+    const coverLetter = typeof result === "string" ? result : result.coverLetter;
+    const fromFallback = typeof result === "object" && result.fromFallback;
+
+    res.status(200).json({ coverLetter, fromFallback });
   } catch (err) {
     console.error("Cover Letter Generation Error:", err.message);
     res.status(500).json({ message: "Failed to generate cover letter" });

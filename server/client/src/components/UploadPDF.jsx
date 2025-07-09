@@ -16,6 +16,7 @@ function UploadPDF() {
         body: formData,
       });
       const data = await res.json();
+      setAnalysis(data.analysis);
       setMessage("Resume analyzed successfully ✅");
       console.log(data.analysis); // Optional: Use this
     } catch (err) {

@@ -32,15 +32,16 @@ ${resumeText}
       throw new Error("Invalid JSON response from Gemini.");
     }
 
-  } catch (apiError) {
-    console.error("❌ Gemini API Error:", apiError.message);
+  } catch (err) {
+    console.error("❌ Gemini API Error:", err.message);
 
     // 🔁 Use mock fallback if Gemini fails
     return {
+      fromFallback: true,
       summary: "A highly motivated and detail-oriented developer with a passion for solving problems using modern web technologies.",
       strengths: ["JavaScript", "React", "Node.js", "REST APIs", "Team Collaboration"],
       improvements: ["Add CI/CD knowledge", "Contribute to open source", "Master Docker"],
-      job_roles: ["Frontend Developer", "Full Stack Developer", "Software Engineer"]
+      job_roles: ["Frontend Developer", "Full Stack Developer", "Software Engineer"] 
     };
   }
 };
@@ -66,10 +67,14 @@ ${resumeText}
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    return await response.text();
+    const text = await response.text();
+    return { coverLetter: text, fromFallback: false }; // ✅ wrap in object
   } catch (err) {
     console.error("Cover Letter Generation Error:", err.message);
-    return `
+
+    // ✅ Return fallback as an object
+    return {
+      coverLetter: `
 Dear Hiring Manager,
 
 I'm excited to apply for the ${jobTitle} role at ${companyName}. With strong experience in web development and a passion for building clean, scalable solutions, I believe I can contribute effectively to your team.
@@ -78,9 +83,12 @@ I’d welcome the opportunity to discuss how I can support your goals.
 
 Sincerely,  
 [Your Name]
-    `;
+      `,
+      fromFallback: true,
+    };
   }
 };
+
 
 module.exports = {
   analyzeResume,
