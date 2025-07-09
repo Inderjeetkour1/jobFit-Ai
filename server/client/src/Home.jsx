@@ -16,6 +16,8 @@ function Home() {
   const [jobTitle, setJobTitle] = useState("Software Engineer");
   const [companyName, setCompanyName] = useState("ABC Corp");
 
+  console.log("Using backend API:", BASE_URL);
+
   const handleAnalyze = async () => {
     if (!resumeText.trim() && !file) {
       return alert("Please upload a resume file or paste your resume text.");
