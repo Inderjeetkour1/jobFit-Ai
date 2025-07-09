@@ -1,17 +1,13 @@
 services:
   - type: web
-    name: jobfit-ai-backend
+    name: jobfit-server
     env: node
-    plan: free
-    buildCommand: |
-      cd server/client && npm install && npm run build
-      cd .. && npm install
+    branch: main
+    rootDir: server
+    buildCommand: npm install && npm run build
     startCommand: node app.js
     envVars:
-      - key: NODE_VERSION
-        value: 18
-      - key: GEMINI_API_KEY
-        value: AIzaSyCDJN2xMoFIHBMiaMUmMENc4hTCxTLYJY0
-      - key: MONGO_URI
-        value: mongodb+srv://kourinderjeet386:Mithe%40123@inderjeetcluster.wc4av4q.mongodb.net/?retryWrites=true&w=majority&appName=Inderjeetcluster
-
+      - key: AIzaSyCDJN2xMoFIHBMiaMUmMENc4hTCxTLYJY0
+        sync: false
+      - key: mongodb+srv://kourinderjeet386:Mithe%40123@inderjeetcluster.wc4av4q.mongodb.net/?retryWrites=true&w=majority&appName=Inderjeetcluster
+        sync: false
