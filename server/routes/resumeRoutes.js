@@ -21,7 +21,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 /**
- * ✅ 1. Upload PDF & Analyze Resume
+ * ✅ 1. Upload PDF & Analyze Resume (with fallback)
  */
 router.post("/uploadFile", upload.single("resume"), async (req, res) => {
   try {
@@ -30,49 +30,59 @@ router.post("/uploadFile", upload.single("resume"), async (req, res) => {
     const pdfData = await pdfParse(dataBuffer);
     const resumeText = pdfData.text;
 
-    const analysis = await analyzeResume(resumeText);
-    analysis.rawText = resumeText; // ✅ Add raw text for use in cover letter
+    let analysis = await analyzeResume(resumeText);
+    analysis.rawText = resumeText;
 
-    let jobs = [];
-    if (analysis?.job_roles?.length) {
-      const role = analysis.job_roles[0];
-      jobs = await fetchJobsByRole(role);
-    }
+    const role = analysis?.job_roles?.[0] || "";
+    const jobs = role ? await fetchJobsByRole(role) : [];
 
-    res.status(200).json({
+    return res.status(200).json({
       analysis,
       jobs,
       fromFallback: analysis.fromFallback || false
     });
   } catch (err) {
-    console.error("Error analyzing PDF:", err.message);
-    res.status(500).json({ message: "Failed to analyze PDF" });
+    console.error("❌ Error analyzing PDF:", err.message);
+
+    // Use fallback
+    const fallback = await analyzeResume("", true);
+    fallback.rawText = ""; // PDF failed, so no text
+    return res.status(200).json({
+      analysis: fallback,
+      jobs: [],
+      fromFallback: true
+    });
   }
 });
 
 /**
- * ✅ 2. Upload Plain Text Resume
+ * ✅ 2. Upload Plain Text Resume (with fallback)
  */
 router.post("/upload", async (req, res) => {
   const { resumeText } = req.body;
+
   try {
-    const analysis = await analyzeResume(resumeText);
-    analysis.rawText = resumeText; // ✅ Consistent with PDF fallback
+    let analysis = await analyzeResume(resumeText);
+    analysis.rawText = resumeText;
 
-    let jobs = [];
-    if (analysis?.job_roles?.length) {
-      const role = analysis.job_roles[0];
-      jobs = await fetchJobsByRole(role);
-    }
+    const role = analysis?.job_roles?.[0] || "";
+    const jobs = role ? await fetchJobsByRole(role) : [];
 
-    res.status(200).json({
+    return res.status(200).json({
       analysis,
       jobs,
       fromFallback: analysis.fromFallback || false
     });
   } catch (err) {
-    console.error("Text analysis failed:", err.message);
-    res.status(500).json({ message: "Failed to analyze resume text" });
+    console.error("❌ Text analysis failed:", err.message);
+
+    const fallback = await analyzeResume("", true);
+    fallback.rawText = resumeText || "";
+    return res.status(200).json({
+      analysis: fallback,
+      jobs: [],
+      fromFallback: true
+    });
   }
 });
 

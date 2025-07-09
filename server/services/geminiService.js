@@ -1,10 +1,25 @@
-// ✅ geminiService.js (backend)
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const analyzeResume = async (resumeText) => {
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-  const prompt = `
+/**
+ * Analyze Resume using Gemini or fallback
+ */
+const analyzeResume = async (resumeText, forceFallback = false) => {
+  if (forceFallback || !resumeText) {
+    return {
+      summary: "A versatile and eager software developer with hands-on experience in modern web technologies.",
+      strengths: ["JavaScript", "React", "Express", "MongoDB"],
+      improvements: ["Add CI/CD", "Build projects with microservices", "Explore cloud deployments"],
+      job_roles: ["Frontend Developer", "Full Stack Developer"],
+      fromFallback: true,
+      rawText: resumeText
+    };
+  }
+
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+
+    const prompt = `
 You are a smart resume analyzer. Analyze the following resume and return JSON format like this:
 
 {
@@ -15,16 +30,16 @@ You are a smart resume analyzer. Analyze the following resume and return JSON fo
 }
 
 Resume:
-${resumeText}`;
+${resumeText}
+    `;
 
-  try {
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = await response.text();
 
     try {
       const json = JSON.parse(text);
-      json.rawText = resumeText; // ✅ Add raw text for fallback use
+      json.rawText = resumeText; // ✅ Add raw text for cover letter generation
       return json;
     } catch (err) {
       console.error("❌ JSON Parsing Failed. Gemini said:", text);
@@ -50,6 +65,9 @@ ${resumeText}`;
   }
 };
 
+/**
+ * Generate Cover Letter using Gemini or fallback
+ */
 const generateCoverLetter = async (resumeText, jobTitle, companyName) => {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
@@ -61,13 +79,18 @@ Based on the following resume, write a personalized, professional cover letter
 for the job title "${jobTitle}" at "${companyName}". Keep it concise, enthusiastic, and confident.
 
 Resume:
-${resumeText}`;
+${resumeText}
+    `;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    return await response.text();
+    const text = await response.text();
+
+    return text;
   } catch (err) {
     console.error("Cover Letter Generation Error:", err.message);
+
+    // ✅ Return a basic fallback cover letter
     return `
 Dear Hiring Manager,
 
@@ -75,7 +98,7 @@ I'm excited to apply for the ${jobTitle} role at ${companyName}. With experience
 
 Looking forward to the opportunity to connect.
 
-Sincerely,
+Sincerely,  
 [Your Name]
     `;
   }
