@@ -1,6 +1,7 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+// Resume analyzer function
 const analyzeResume = async (resumeText) => {
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
@@ -44,15 +45,16 @@ ${resumeText}
   }
 };
 
-
-/**
- * ✅ Generate Cover Letter using Gemini
- */
+// Cover letter generator
 const generateCoverLetter = async (resumeText, jobTitle, companyName) => {
-  try{
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+  if (!resumeText || !jobTitle || !companyName) {
+    throw new Error("Missing required values");
+  }
 
-  const prompt = `
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+
+    const prompt = `
 You are a professional job applicant assistant.
 
 Based on the following resume, write a personalized, professional cover letter
@@ -62,12 +64,11 @@ Resume:
 ${resumeText}
 `;
 
-  const result = await model.generateContent(prompt);
-  const response = await result.response;
-  return await response.text();
-} catch (err) {
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return await response.text();
+  } catch (err) {
     console.error("Cover Letter Generation Error:", err.message);
-// 🔁 Mock fallback
     return `
 Dear Hiring Manager,
 
@@ -75,7 +76,7 @@ I'm excited to apply for the ${jobTitle} role at ${companyName}. With strong exp
 
 I’d welcome the opportunity to discuss how I can support your goals.
 
-Sincerely,
+Sincerely,  
 [Your Name]
     `;
   }
@@ -83,5 +84,5 @@ Sincerely,
 
 module.exports = {
   analyzeResume,
-  generateCoverLetter, // ✅ Export the new function
+  generateCoverLetter,
 };
