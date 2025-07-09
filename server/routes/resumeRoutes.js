@@ -31,6 +31,7 @@ router.post("/uploadFile", upload.single("resume"), async (req, res) => {
     const resumeText = pdfData.text;
 
     const analysis = await analyzeResume(resumeText);
+    analysis.rawText = resumeText; // ✅ Add raw text for use in cover letter
 
     let jobs = [];
     if (analysis?.job_roles?.length) {
@@ -41,7 +42,7 @@ router.post("/uploadFile", upload.single("resume"), async (req, res) => {
     res.status(200).json({
       analysis,
       jobs,
-      fromFallback: analysis.fromFallback || false // ✅ frontend needs this
+      fromFallback: analysis.fromFallback || false
     });
   } catch (err) {
     console.error("Error analyzing PDF:", err.message);
@@ -56,6 +57,7 @@ router.post("/upload", async (req, res) => {
   const { resumeText } = req.body;
   try {
     const analysis = await analyzeResume(resumeText);
+    analysis.rawText = resumeText; // ✅ Consistent with PDF fallback
 
     let jobs = [];
     if (analysis?.job_roles?.length) {
@@ -66,7 +68,7 @@ router.post("/upload", async (req, res) => {
     res.status(200).json({
       analysis,
       jobs,
-      fromFallback: analysis.fromFallback || false // ✅ included here too
+      fromFallback: analysis.fromFallback || false
     });
   } catch (err) {
     console.error("Text analysis failed:", err.message);

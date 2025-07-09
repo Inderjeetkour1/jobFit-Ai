@@ -32,7 +32,6 @@ function Home() {
       if (file) {
         const formData = new FormData();
         formData.append("resume", file);
-
         res = await fetch(`${BASE_URL}/resume/uploadFile`, {
           method: "POST",
           body: formData,
@@ -49,11 +48,16 @@ function Home() {
       setAnalysis(data.analysis);
       setJobs(data.jobs || []);
 
-      if (data.analysis?.fromFallback) {
+      if (data.fromFallback) {
         alert("⚠️ Showing fallback results due to AI quota limits.");
       }
-    } catch (error) {
-      console.error("Analyze Error:", error);
+
+      // Ensure we have resume text in state
+      if (!resumeText && data.analysis?.rawText) {
+        setResumeText(data.analysis.rawText);
+      }
+    } catch (err) {
+      console.error("Analyze Error:", err);
       alert("Failed to get AI analysis. Try again.");
     } finally {
       setLoading(false);
@@ -68,13 +72,12 @@ function Home() {
     setGeneratingCover(true);
     setCoverLetter("");
 
-    try {
-      let resumeTextToUse = resumeText;
+    let resumeTextToUse = resumeText;
 
-      if (file) {
+    try {
+      if (!resumeTextToUse && file) {
         const formData = new FormData();
         formData.append("resume", file);
-
         const res = await fetch(`${BASE_URL}/resume/uploadFile`, {
           method: "POST",
           body: formData,
@@ -82,18 +85,27 @@ function Home() {
 
         const data = await res.json();
         resumeTextToUse = data.analysis?.rawText || "";
+        if (!resumeTextToUse) throw new Error("No resume text found in PDF.");
       }
 
       const res = await fetch(`${BASE_URL}/resume/cover-letter`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resumeText: resumeTextToUse, jobTitle, companyName }),
+        body: JSON.stringify({
+          resumeText: resumeTextToUse,
+          jobTitle,
+          companyName,
+        }),
       });
 
       const data = await res.json();
       setCoverLetter(data.coverLetter || "Failed to generate cover letter.");
+
+      if (data.fromFallback) {
+        alert("⚠️ Showing fallback cover letter due to AI quota limits.");
+      }
     } catch (err) {
-      console.error("Cover Letter Error:", err);
+      console.error("Cover Letter Error:", err.message);
       setCoverLetter("Something went wrong.");
     } finally {
       setGeneratingCover(false);
@@ -106,13 +118,13 @@ function Home() {
       <main className="ml-64 p-8">
         <h1 className="text-3xl font-bold mb-4">AI Resume Analyzer</h1>
 
-        <section id="upload">
+        <section>
           <label className="block mb-2 font-medium">Upload Resume (PDF)</label>
           <input
             type="file"
             accept=".pdf"
-            className="block w-full text-sm text-gray-700 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
             onChange={(e) => setFile(e.target.files[0])}
+            className="block w-full text-sm text-gray-700 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
           />
 
           <h3 className="mt-6 mb-2 font-semibold text-lg">OR Paste Resume Text:</h3>
@@ -134,7 +146,7 @@ function Home() {
           </div>
         </section>
 
-        <section id="cover" className="mt-6 flex flex-col sm:flex-row gap-4">
+        <section className="mt-6 flex flex-col sm:flex-row gap-4">
           <div>
             <label className="block text-sm mb-1">Job Title</label>
             <select
