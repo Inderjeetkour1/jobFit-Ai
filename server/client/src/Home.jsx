@@ -3,7 +3,7 @@ import Sidebar from "./components/Sidebar";
 import Spinner from "./components/Spinner";
 import AnalysisResult from "./components/AnalysisResult";
 
-const BASE_URL = "https://jobfit-server.onrender.com";
+const BASE_URL = "https://jobfit-server-4ap9.onrender.com";
 
 function Home() {
   const [resumeText, setResumeText] = useState("");
