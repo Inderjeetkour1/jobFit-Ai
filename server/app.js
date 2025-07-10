@@ -7,31 +7,33 @@ const path = require("path");
 dotenv.config();
 
 const app = express();
+
+// Middlewares
 app.use(cors());
 app.use(express.json());
 
-// Serve static assets (React) in production
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "client", "dist")));
-}
-
-// Resume routes
+// Resume API Routes
 const resumeRoutes = require("./routes/resumeRoutes");
 app.use("/resume", resumeRoutes);
 
-// Fallback for React (Single Page App)
-if (process.env.NODE_ENV === "production") {
-  app.get("*", (req, res) => {
-    res.sendFile(path.resolve(__dirname, "client", "dist", "index.html"));
-  });
-}
+// 👉 Serve frontend build from /client/dist (always do this after routes)
+app.use(express.static(path.join(__dirname, "client", "dist")));
 
-const PORT = process.env.PORT || 5000;
+// 👉 SPA fallback (for React Router)
+app.get("*", (req, res) => {
+  res.sendFile(path.resolve(__dirname, "client", "dist", "index.html"));
+});
 
+// Port
+const PORT = process.env.PORT || 10000;
+
+// DB Connect and Start Server
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
-    console.log("MongoDB connected");
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    console.log("✅ MongoDB connected");
+    app.listen(PORT, () =>
+      console.log(`🚀 Server running on http://localhost:${PORT}`)
+    );
   })
-  .catch((err) => console.error("Mongo error:", err));
+  .catch((err) => console.error("❌ MongoDB connection error:", err));

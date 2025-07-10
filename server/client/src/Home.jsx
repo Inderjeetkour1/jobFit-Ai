@@ -3,7 +3,7 @@ import Sidebar from "./components/Sidebar";
 import Spinner from "./components/Spinner";
 import AnalysisResult from "./components/AnalysisResult";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const BASE_URL = "";
 
 function Home() {
   const [resumeText, setResumeText] = useState("");
