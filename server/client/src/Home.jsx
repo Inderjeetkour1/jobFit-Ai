@@ -3,13 +3,13 @@ import Sidebar from "./components/Sidebar";
 import Spinner from "./components/Spinner";
 import AnalysisResult from "./components/AnalysisResult";
 
-const BASE_URL = "";
+const BASE_URL = "https://jobfit-server.onrender.com";
 
 function Home() {
   const [resumeText, setResumeText] = useState("");
   const [file, setFile] = useState(null);
   const [analysis, setAnalysis] = useState(null);
-  const [jobs, setJobs] = useState([]);
+  const [jobs, setJobs] = usecdState([]);
   const [coverLetter, setCoverLetter] = useState("");
   const [loading, setLoading] = useState(false);
   const [generatingCover, setGeneratingCover] = useState(false);
