@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: jobfit-server
+    env: node
+    branch: main
+    rootDir: server
+    buildCommand: |
+      cd client && npm install && npm run build
+      cd .. && npm install
+    startCommand: node app.js
+    envVars:
+      - key: GEMINI_API_KEY
+        value: AIzaSyCDJN2xMoFIHBMiaMUmMENc4hTCxTLYJY0
+      - key: MONGO_URL
+        value: mongodb+srv://kourinderjeet386:Mithe%40123@inderjeetcluster.wc4av4q.mongodb.net/?retryWrites=true&w=majority&appName=Inderjeetcluster
+      - key: PORT
+        value: 10000
